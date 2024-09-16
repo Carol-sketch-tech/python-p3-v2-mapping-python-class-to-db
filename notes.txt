@@ -1,0 +1,8 @@
+objectives -> persist the attributes of a python object as a row in a database table.
+why map classes to tables ? to persis data stored in python objects efficiently and in an organized manner, we 
+need to map a python class to a databse by twritng methods that encapsulate table createing and deletion, along with methods to save, update, delete and query object state within a database table.
+
+in this lesson we will learn how to persist a python objec tinto a row in a databse table by implementing the following methods for a class.
+
+MAPPING A DEPARTMENT CLASS TO A DATABASE TABLE.
+    Creating (and dropping ) the departments table.
