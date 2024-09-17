@@ -5,4 +5,244 @@ need to map a python class to a databse by twritng methods that encapsulate tabl
 in this lesson we will learn how to persist a python objec tinto a row in a databse table by implementing the following methods for a class.
 
 MAPPING A DEPARTMENT CLASS TO A DATABASE TABLE.
-    Creating (and dropping ) the departments table.
+  1.  INITILIAZING THE OCONSTANCT OBJECT FOR OUR DATABASE.
+
+
+the database initialization is as cerating or calling the functions or methods that hold the sqlite3 cnnection and objects that execute sql statements 
+for instance 
+     CONN = sqlite3.connect('company.db') -> is a constant equal to a hash tat contains a connection to the database.
+     CURSOR = CONN.cursor() -> is a constant that allows us to interact with the database and execute SQL statements.
+      this initializarions statements can be written in their own files names __init__.py then imported to our model file using an import statement.
+        from __init__ import CURSOR, CONN
+ 
+ 2. creating and (dropping the departments) table.
+    - the method for creating a table is as follows 
+    create_table(cls)
+    - the return value is none.
+    description -> create a table to store data about instances of a class.
+    - the method for deletign a table si as follows 
+    drop_table(cls)
+    return value for this table is none.
+    -the method is used to drop or delete the table entirely.
+
+           @classmethod
+    def create_table(cls):
+        # create a new table to persist the attribute of the department isntances.
+        sql = '''
+                CREATE TABLE IF NOT EXISTS departments(
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                location TEXT)
+                '''
+        CURSOR.execute(sql)
+        CONN.commit()
+    
+    # delete table method drop_table(cls)
+    @classmethod
+    def drop_table(cls):
+        '''drop table that persists Deprtment instances'''
+        sql= '''
+            DROP TABLE IF EXITS departments;
+        '''
+        CURSOR.execute(sql)
+        CONN.commit()
+
+the create_table(cls) and drop_table(cls) are class methods and  not isntance methods because 
+it is not the work of an object or intanse to create or delete a table it will eventually be saved into, it is the job of the class as a whole.
+
+You can try out the code to create the departments table in the company.db database file.
+in the file debug.py
+the following code is already in it 
+
+     from __init__ import CONN, CURSOR
+     from department import department
+
+     import ipdb
+     ipdb.set_trace()
+ in the debug file we are importing the sqlite3.conenection and the sqlite3.Cursor objects that we instantiated in __Init__.py filr.
+ we are also importing the Department class so that we can use its method during our ipdb session.
+
+ run the followinf code to enter the ipdb session.
+    python file path/ filename that has the import statement for ipdb.
+    in this instance it is 
+        python lib/debug.py
+     to create a table run the method create_table(cls) class method.
+     the command line is:
+        Department.create_table() - run this comamnd line in the ipdb session that we checked into.
+        -> this command line has the name of the class that the class method is defined.
+        wehn you run this code there is no return value 
+        but if you want to confirm if you ahve created the table then run this line 
+            CURSOR.execute("PRAGMA table_info(departments)").fetchall() in the ipdb session that we checked into 
+
+         but if we want to delete the table we would run the followinf command line into the ipdb session.
+            Department.drop_table()
+
+
+updating the debug.py file to always drop a table and recreate a table so that we alway start with a new table.
+add these line in the debug.py file to do this 
+    Department.drop_table()
+    Department.create_table()
+    after the import ipdb statement.
+
+
+MAPPING AN OBJEC TO A TABLE ROW.
+the method we use for this is called save(self) method..
+the return value is none 
+and teh description of this method is it saves teh attribute of an object as a new table row.
+having createed the depratment table, we can start persiting object data as rows in the table.
+note taht we are not saving python class objects in our databse rather we are saving attributef of each instance created.
+in this case in the department an instance attributes are name and lication. we are to save the databse as a single row.
+the row will also include the primary key named id.
+we will persist the attributes of an isntance of the class Department in the department table using the save() method.
+the save() method is an instance method.
+
+The process of inserting an instance attributes into a table row is :
+    1. insert a new row into the departments table that contain the attribute values of the object.
+    2. Grab the primary key id column of that newly inserted row and assign that value as the id attribute of the 
+    object.
+
+Addign the save() method into the department class.
+This is how you add the save method in the Class 
+
+     @classmethod
+    def save(self):
+        # insert a new row with the name and location values of the current Department instance.
+        # Update object id attribute using the primary key value of new row.
+        sql = '''
+                INSERT INTO departments (name, location)
+                VALUES (?,?)
+                '''
+        CURSOR.execute(sql, (self.name, self.location))
+        CONN.commit()
+
+        self.id = CURSOR.lastrowid
+
+Note the inserted statemetn contains two question markd rather than atring literals for the name and location values.
+we will need to pass in or interpolate the name and location of a given Department object into our pythonstring that represents
+ the SQL insert statement.
+ to achieve this we use something called bound parameters.
+   note -> using f"string' will not work with statement sent through the sqlilte3 module.
+   the sqlite3 will interpret any values interpolated in this fashion as columns.
+ we use the ? character as a placeholder.the the argument tuple (self.name, self.location) we pass in the .execute function
+ will applied as the values of the question marks.
+
+ We can step through this process by intantiating and saving objects that are instances of the Department class, pringting 
+ the objects state before and after saving to the database. to do this update the debug.py file.
+
+     update debug.py as follows:
+        from __init__ import CONN, CURSOR
+        from department import Department
+
+        import ipdb
+
+        Department.drop_table()
+        Department.create_table()
+
+        payroll = Department("Payroll", "Building A, 5th Floor")
+        print(payroll)  # <Department None: Payroll, Building A, 5th Floor>
+
+        payroll.save()  # Persist to db, assign object id attribute
+        print(payroll)  # <Department 1: Payroll, Building A, 5th Floor>
+
+        hr = Department("Human Resources", "Building C, East Wing")
+        print(hr)  # <Department None: Human Resources, Building C, East Wing>
+
+        hr.save()  # Persist to db, assign object id attribute
+        print(hr)  # <Department 2: Human Resources, Building C, East Wing>
+
+        ipdb.set_trace()
+
+Prior to calling the save() method, th print statement shows the newly instantiated Department Object's id attribute initially has the value of None.
+After calling The save() method on the newly created instance and the save method is executed, the print statement shows the Department OBJECTS ID 
+attribute has been updated to contain an interger value corresponding to the primary key of the new table row.
+the save m,ethod does not return value, but we can query the database table and create a list from the result.
+         
+         ipdb> departments = CURSOR.execute('SELECT * FROM departments')
+        ipdb> [row for row in departments]
+
+
+CREATING AN INSTANCE VS CREATING A TABLE ROW.
+THE Moment that we create an intance of the Department class Wwith the __init__ method is different that the moment 
+in which we save a representation of that department object in our database.
+      
+        1. the __init__ method creates a new python object, an isntance of the depratment class.
+        2.the save() ethod takes the attributes that chracterize teh python object and saves them in a new row in the 
+        databse departments table.
+
+    while it is possible to update the __init__ method such that it saves the objects attriute as a new table row, this in not a greate idea. 
+    we dont want to force our objects to be saved everytime they are created, or make the creation of the object dependant upon laeays coupled with savint a row to the database.
+
+1. CREATE() METHOD.
+The create(cls, attributes) -> it creates a new object that is an instance of the cls and saves its attributes as a new table row.
+the return value for this method is an object that is an instance of the class.
+
+the save() method requires two steps to persits an object to the database.
+    1. create an object that is an isntance of the class, then 
+    2. call the save() method to insert a new row contining the objects attribute values to the database.
+
+Lets create a new clas method names create() that does just that in one step.
+        @classmethod 
+        def create(cls, name, location):
+          #initialize a new department isntnace and save the object tot he database.
+        department = cls(name, location)
+        department.save()
+        return department
+Here we use argumetns to pass a name and location into our create() method.
+we use that name and location to instantiate an object that in new instance of the Department class.
+thwnw e call the Save() method to persist the new objects attribute to the database.
+now lets edit the debug.py file and use the create(cls) method to instanciate and save the payroll and human resource departments.
+
+from __init__ import CONN, CURSOR
+from department import Department
+
+import ipdb
+Department.drop_table()
+Department.create_table()
+
+payroll = Department.create('payroll','Building A, 5th Floor')
+print(payroll)
+
+hr = Department.create("Human resource", "Building C, East Wing")
+print(hr)
+
+food = Department.create('Cafeteria', 'Building C, West wing, 1st Floor)
+print(food)
+
+ipdb.set_trace()
+
+
+UPDATE AND DELETE METHODS.
+update(self) method -> updates an objects corresponding table row.
+return value is none.
+
+delete(self) method -> deletes the table row for the specified object.
+return value is none.
+
+Edit the Department class to add methods to update and delete the database row associated an objec
+objectthat is an isntance of the Depratment class.
+
+
+  def update(self):
+        # update the table row corresponding to the current department instance.
+        sql = '''
+                UPDATE departments
+                SET name = ?, location = ?
+                WHERE id = ?
+                '''
+        CURSOR.execute(sql, (self.name, self.location, self.id))
+        CONN.commit()
+    
+    def delete(self):
+        #delete the table row corresponding to the current Depatment instance.
+        sql = '''
+                DELETE FROM departments
+                WHERE id = ?
+                '''
+        CURSOR.execute(sql, (self.id))
+        CONN.commit()
+
+edit the debug.py to call the new update() and delete() methods.
+
+TESTING THE ORM
+the testing folder containes a file department_orm_test.py that tests the ORM methods.
+Run the Pytest - x to cinfirm your code passs the test 
